@@ -1,0 +1,57 @@
+VERSION "FCW virtual-CAN simulation"
+
+NS_ :
+    NS_DESC_
+    CM_
+    BA_DEF_
+    BA_
+    VAL_
+    CAT_DEF_
+    CAT_
+    FILTER
+    BA_DEF_DEF_
+    EV_DATA_
+    ENVVAR_DATA_
+    SGTYPE_
+    SGTYPE_VAL_
+    BA_DEF_SGTYPE_
+    BA_SGTYPE_
+    SIG_TYPE_REF_
+    VAL_TABLE_
+    SIG_GROUP_
+    SIG_VALTYPE_
+    SIGTYPE_VALTYPE_
+    BO_TX_BU_
+    BA_DEF_REL_
+    BA_REL_
+    BA_DEF_DEF_REL_
+    BU_SG_REL_
+    BU_EV_REL_
+    BU_BO_REL_
+    SG_MUL_VAL_
+
+BS_:
+BU_: CAMERA ECU
+
+BO_ 384 FCW_OBJECT: 8 CAMERA
+ SG_ Distance_m : 0|12@1+ (0.1,0) [0|409.5] "m" ECU
+ SG_ ObjectClass : 12|4@1+ (1,0) [0|15] "" ECU
+ SG_ Confidence_pct : 16|8@1+ (1,0) [0|100] "%" ECU
+ SG_ AliveCounter : 24|4@1+ (1,0) [0|15] "" ECU
+ SG_ LaneValid : 28|1@1+ (1,0) [0|1] "" ECU
+ SG_ ObjectId : 32|8@1+ (1,0) [0|255] "" ECU
+ SG_ CRC8 : 56|8@1+ (1,0) [0|255] "" ECU
+
+BO_ 385 CAMERA_HEARTBEAT: 8 CAMERA
+ SG_ CameraState : 0|2@1+ (1,0) [0|3] "" ECU
+ SG_ AliveCounter : 8|4@1+ (1,0) [0|15] "" ECU
+
+BO_ 640 FCW_STATUS: 8 ECU
+ SG_ WarningActive : 0|1@1+ (1,0) [0|1] "" CAMERA
+ SG_ SafeState : 1|1@1+ (1,0) [0|1] "" CAMERA
+ SG_ FaultReason : 2|3@1+ (1,0) [0|7] "" CAMERA
+ SG_ DetectionAge_ms : 8|16@1+ (1,0) [0|65535] "ms" CAMERA
+
+VAL_ 384 ObjectClass 0 "unknown" 1 "car" 2 "two_wheeler" 3 "auto_rickshaw" 4 "pedestrian" 5 "speed_breaker" ;
+VAL_ 385 CameraState 0 "init" 1 "running" 2 "degraded" 3 "error" ;
+VAL_ 640 FaultReason 0 "none" 1 "timeout" 2 "crc" 3 "alive_counter" 4 "decode" ;
