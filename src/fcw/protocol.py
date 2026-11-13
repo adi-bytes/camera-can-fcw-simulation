@@ -15,6 +15,14 @@ CLASSES = {"unknown": 0, "car": 1, "two_wheeler": 2, "auto_rickshaw": 3,
            "pedestrian": 4, "speed_breaker": 5}
 
 
+class FrameError(ValueError):
+    """Frame is not a well-formed FCW_OBJECT (wrong ID or length)."""
+
+
+class CrcError(FrameError):
+    """Frame CRC does not match its payload."""
+
+
 def crc8_j1850(payload: bytes) -> int:
     """CRC-8/SAE-J1850: poly 0x1D, init/xorout 0xFF, no reflection."""
     crc = 0xFF
@@ -51,6 +59,14 @@ def object_message(db: cantools.database.Database, *, distance_m: float, class_i
     return can.Message(arbitration_id=OBJECT_ID, data=raw, is_extended_id=False)
 
 
+def heartbeat_message(db: cantools.database.Database, *, state: int, alive: int) -> can.Message:
+    """Build CAMERA_HEARTBEAT; it is independent of object-frame integrity checks."""
+    raw = db.get_message_by_name("CAMERA_HEARTBEAT").encode({
+        "CameraState": state, "AliveCounter": alive % 16,
+    })
+    return can.Message(arbitration_id=HEARTBEAT_ID, data=raw, is_extended_id=False)
+
+
 def status_message(db: cantools.database.Database, *, warning: bool, safe: bool,
                    reason: int, age_ms: int) -> can.Message:
     raw = db.get_message_by_name("FCW_STATUS").encode({
@@ -72,9 +88,9 @@ class ObjectFrame:
 
 def decode_object(db: cantools.database.Database, message: can.Message) -> ObjectFrame:
     if message.arbitration_id != OBJECT_ID or len(message.data) != 8:
-        raise ValueError("not an 8-byte FCW_OBJECT frame")
+        raise FrameError("not an 8-byte FCW_OBJECT frame")
     if crc8_j1850(bytes(message.data[:7])) != message.data[7]:
-        raise ValueError("CRC mismatch")
+        raise CrcError("CRC mismatch")
     # Choices in the DBC are useful to CAN tooling, but ECU logic needs scalars.
     data = db.get_message_by_name("FCW_OBJECT").decode(message.data, decode_choices=False)
     return ObjectFrame(float(data["Distance_m"]), int(data["ObjectClass"]),

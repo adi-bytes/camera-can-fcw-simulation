@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 from itertools import cycle
 
-from .protocol import CLASSES, database, object_message, open_bus
+from .protocol import CLASSES, database, heartbeat_message, object_message, open_bus
 
 LOG = logging.getLogger("fcw.camera")
 LABEL_TO_FCW = {
@@ -105,12 +105,17 @@ def main() -> None:
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     detections = simulated_detections() if args.simulate else video_detections(args.video, args.weights, args.focal_length_px, args.show)
-    db, alive, started = database(), 0, time.monotonic()
+    db, alive, heartbeat_alive, started = database(), 0, 0, time.monotonic()
+    next_heartbeat = started
     period = 1 / args.rate_hz
     with open_bus(args.interface, args.channel) as bus:
         LOG.info("SIMULATION ONLY: camera node sending at %.1f Hz", args.rate_hz)
         for detection in detections:
             tick = time.monotonic()
+            if tick >= next_heartbeat:
+                bus.send(heartbeat_message(db, state=1, alive=heartbeat_alive))
+                heartbeat_alive = (heartbeat_alive + 1) % 16
+                next_heartbeat = max(next_heartbeat + .5, tick)
             fault_active = args.fault != "none" and tick - started >= args.fault_after
             if fault_active and args.fault == "drop":
                 LOG.warning("fault injected: dropping FCW_OBJECT")
